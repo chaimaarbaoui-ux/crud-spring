@@ -15,6 +15,11 @@ pipeline {
 
     stages {
 
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/chaimaarbaoui-ux/crud-spring'
+            }
+        }
         stage("Tests") {
             steps {
                 sh "mvn clean test"
