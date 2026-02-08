@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+
+    options {
+        skipDefaultCheckout()
+    }
+    tools {
+        maven "mvn"
+    }
+
+    environment {
+        IMAGE_NAME = "chayma0722/crud-spring"
+        TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage("Tests") {
+            steps {
+                sh "mvn clean test"
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-26.2.0.119303') {
+                    sh 'mvn sonar:sonar'
+                }
+            }
+        }
+
+        stage("Build Jar") {
+            steps {
+                sh "mvn clean package -DskipTests"
+            }
+        }
+
+        stage("Build Docker Image") {
+            steps {
+                sh """
+                docker build -t ${IMAGE_NAME}:${TAG} .
+                docker tag ${IMAGE_NAME}:${TAG} ${IMAGE_NAME}:latest
+                """
+            }
+        }
+
+        stage("Push to Docker Hub") {
+            steps {
+                withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-cred',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                    echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                    docker push ${IMAGE_NAME}:${TAG}
+                    docker push ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+    }
+}
