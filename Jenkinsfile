@@ -68,7 +68,7 @@ pipeline {
                     sh """
             chmod 600 $SSH_KEY
             ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@74.234.49.53 << 'EOF'
-              cd /home/chayma/crud-app
+              cd /home/chymou/crud-app
               sed -i "s/BACKEND_TAG=.*/BACKEND_TAG=${TAG}/" .env
               docker-compose pull backend
               docker-compose up -d backend
