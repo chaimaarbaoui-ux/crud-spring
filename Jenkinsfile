@@ -59,26 +59,24 @@ pipeline {
         }
 
         stage("Deploy") {
-            steps {
-                withCredentials([sshUserPrivateKey(
-                        credentialsId: 'vm-ssh-key',
-                        keyFileVariable: 'SSH_KEY',
-                        usernameVariable: 'SSH_USER'
-                )]) {
-                    sh """
-            chmod 600 $SSH_KEY
-            ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@74.234.49.53 << 'EOF'
-              cd /home/chymou/crud-app
-              sed -i "s/BACKEND_TAG=.*/BACKEND_TAG=${TAG}/" .env
-              docker compose pull backend
-              docker compose down backend
-              docker compose up -d --no-deps backend
-            EOF
-            """
-                }
-            }
+    steps {
+        withCredentials([sshUserPrivateKey(
+                credentialsId: 'vm-ssh-key',
+                keyFileVariable: 'SSH_KEY',
+                usernameVariable: 'SSH_USER'
+        )]) {
+            sh '''
+chmod 600 "$SSH_KEY"
+
+ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "$SSH_USER@74.234.49.53" <<EOF
+cd /home/chymou/crud-app
+sed -i "s/BACKEND_TAG=.*/BACKEND_TAG='"${TAG}"'/" .env
+docker compose pull backend
+docker compose up -d --no-deps backend
+EOF
+'''
         }
-
-
+    }
+}
     }
 }
