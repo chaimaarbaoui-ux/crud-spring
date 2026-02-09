@@ -14,7 +14,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/chaimaarbaoui-ux/crud-spring'
@@ -31,12 +30,6 @@ pipeline {
                 withSonarQubeEnv('sonarqube-26.2.0.119303') {
                     sh 'mvn sonar:sonar'
                 }
-            }
-        }
-
-        stage("Build Jar") {
-            steps {
-                sh "mvn clean package -DskipTests"
             }
         }
 
@@ -64,5 +57,27 @@ pipeline {
                 }
             }
         }
+
+        stage("Deploy") {
+            steps {
+                withCredentials([sshUserPrivateKey(
+                        credentialsId: 'vm-ssh-key',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                )]) {
+                    sh """
+            chmod 600 $SSH_KEY
+            ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@74.234.49.53 << 'EOF'
+              cd /home/chayma/crud-app
+              sed -i "s/BACKEND_TAG=.*/BACKEND_TAG=${TAG}/" .env
+              docker-compose pull backend
+              docker-compose up -d backend
+            EOF
+            """
+                }
+            }
+        }
+
+
     }
 }
